@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Sparkle-Gradient Accent Palette -->
+    <color name="lumina_sparkle_blue">#FF4285F4</color>
+    <color name="lumina_sparkle_purple">#FF8B5CF6</color>
+    <color name="lumina_sparkle_cyan">#FF06B6D4</color>
+
+    <!-- Deep Slate Dark Theme Palette (Default) -->
+    <color name="lumina_dark_background">#FF0F1117</color>
+    <color name="lumina_dark_sidebar">#FF171923</color>
+    <color name="lumina_dark_elevated_card">#FF1E2130</color>
+    <color name="lumina_dark_surface_variant">#FF232738</color>
+    <color name="lumina_dark_border_subtle">#FF2A2F42</color>
+    <color name="lumina_dark_text_primary">#FFF8FAFC</color>
+    <color name="lumina_dark_text_secondary">#FF94A3B8</color>
+    <color name="lumina_dark_code_surface">#FF121521</color>
+    <color name="lumina_dark_math_surface">#FF181D2E</color>
+    <color name="lumina_dark_primary_container">#FF1F2A48</color>
+    <color name="lumina_dark_on_primary_container">#FFD8E4FF</color>
+    <color name="lumina_dark_secondary_container">#FF2C234B</color>
+    <color name="lumina_dark_on_secondary_container">#FFE9DDFF</color>
+    <color name="lumina_dark_on_tertiary">#FF042F38</color>
+
+    <!-- Light Theme Palette -->
+    <color name="lumina_light_background">#FFF8FAFC</color>
+    <color name="lumina_light_sidebar">#FFF1F5F9</color>
+    <color name="lumina_light_elevated_card">#FFFFFFFF</color>
+    <color name="lumina_light_surface_variant">#FFE8EEF5</color>
+    <color name="lumina_light_border_subtle">#FFE2E8F0</color>
+    <color name="lumina_light_text_primary">#FF0F172A</color>
+    <color name="lumina_light_text_secondary">#FF475569</color>
+    <color name="lumina_light_code_surface">#FFF1F5F9</color>
+    <color name="lumina_light_math_surface">#FFEEF2FF</color>
+    <color name="lumina_light_primary_container">#FFE0ECFF</color>
+    <color name="lumina_light_on_primary_container">#FF0A2E66</color>
+    <color name="lumina_light_secondary_container">#FFEDE9FE</color>
+    <color name="lumina_light_on_secondary_container">#FF3B1A78</color>
+
+    <!-- Semantic & Brand Status Colors -->
+    <color name="lumina_success">#FF10B981</color>
+    <color name="lumina_warning">#FFF59E0B</color>
+    <color name="lumina_error">#FFEF4444</color>
+    <color name="lumina_white">#FFFFFFFF</color>
+
+    <!-- Google Identity Mark Colors -->
+    <color name="google_brand_red">#FFEA4335</color>
+    <color name="google_brand_yellow">#FFFBBC05</color>
+    <color name="google_brand_green">#FF34A853</color>
+    <color name="google_brand_blue">#FF4285F4</color>
+</resources>

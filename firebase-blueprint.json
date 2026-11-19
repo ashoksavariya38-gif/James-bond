@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "StudySession": {
+      "title": "StudySession",
+      "description": "A user's AI study chat session with model mode and language metadata.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Authenticated owner UID" },
+        "title": { "type": "string", "description": "Session display title" },
+        "preview": { "type": "string", "description": "Latest message snippet" },
+        "modelMode": {
+          "type": "string",
+          "enum": ["GEMINI_FAST", "GEMINI_DEEP", "CHATGPT", "DUAL_COMPARE"],
+          "description": "Selected AI model mode"
+        },
+        "languageCode": { "type": "string", "description": "Latin-script language code" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp" }
+      },
+      "required": ["userId", "title", "preview", "modelMode", "languageCode", "createdAt", "updatedAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "A single message within a study session, optionally holding a second-opinion comparison.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Authenticated owner UID" },
+        "sessionId": { "type": "string", "description": "Parent session document ID" },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "content": { "type": "string", "description": "Primary markdown/LaTeX message content" },
+        "secondaryContent": { "type": "string", "description": "Optional comparison response from second AI" },
+        "modelLabel": { "type": "string", "description": "Model label for primary response" },
+        "secondaryModelLabel": { "type": "string", "description": "Model label for secondary response" },
+        "attachmentLabel": { "type": "string", "description": "Attachment filename or description" },
+        "sourceUrls": { "type": "array", "description": "Grounded reference URLs" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp" }
+      },
+      "required": ["userId", "sessionId", "role", "content", "modelLabel", "sourceUrls", "createdAt"]
+    },
+    "StudyNote": {
+      "title": "StudyNote",
+      "description": "Saved study note captured from an AI explanation or created manually.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "languageCode": { "type": "string" },
+        "tags": { "type": "array" },
+        "sourceSessionId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "content", "languageCode", "tags", "createdAt", "updatedAt"]
+    },
+    "FlashcardDeck": {
+      "title": "FlashcardDeck",
+      "description": "A deck of flashcards with spaced repetition status per card.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "topic": { "type": "string" },
+        "languageCode": { "type": "string" },
+        "cards": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "topic", "languageCode", "cards", "createdAt", "updatedAt"]
+    },
+    "SavedCourse": {
+      "title": "SavedCourse",
+      "description": "A bookmarked worldwide course discovered via Course Finder.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "provider": { "type": "string" },
+        "language": { "type": "string" },
+        "level": { "type": "string" },
+        "duration": { "type": "string" },
+        "cost": { "type": "string" },
+        "url": { "type": "string" },
+        "summary": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "provider", "language", "level", "duration", "cost", "url", "summary", "createdAt"]
+    },
+    "StudyStats": {
+      "title": "StudyStats",
+      "description": "User study timer and Pomodoro session counters.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "completedPomodoros": { "type": "integer" },
+        "totalFocusMinutes": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "completedPomodoros", "totalFocusMinutes", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/StudySession" },
+      "description": "User-scoped study chat sessions"
+    },
+    "/users/{userId}/sessions/{sessionId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Messages inside a user's study chat session"
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/StudyNote" },
+      "description": "User-scoped saved study notes"
+    },
+    "/users/{userId}/flashcardDecks/{deckId}": {
+      "schema": { "$ref": "#/entities/FlashcardDeck" },
+      "description": "User-scoped flashcard decks"
+    },
+    "/users/{userId}/savedCourses/{courseId}": {
+      "schema": { "$ref": "#/entities/SavedCourse" },
+      "description": "User-scoped bookmarked worldwide courses"
+    },
+    "/users/{userId}/profile/{docId}": {
+      "schema": { "$ref": "#/entities/StudyStats" },
+      "description": "User-scoped study statistics document"
+    }
+  }
+}

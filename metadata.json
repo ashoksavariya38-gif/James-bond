@@ -1,0 +1,6 @@
+{
+  "name": "LuminaStudy AI",
+  "description": "Multilingual AI Study Assistant powered by Gemini and Firestore with course discovery, flashcards, quizzes, and Pomodoro focus tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

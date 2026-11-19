@@ -1,0 +1,202 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidTimestamp(ts) {
+      return ts is timestamp && ts <= request.time;
+    }
+
+    function isValidLanguageCode(code) {
+      return code is string && code in ['auto', 'en', 'es', 'fr', 'pt', 'it', 'ro', 'de', 'nl', 'pl', 'la'];
+    }
+
+    function isValidModelMode(mode) {
+      return mode is string && mode in ['GEMINI_FAST', 'GEMINI_DEEP', 'CHATGPT', 'DUAL_COMPARE'];
+    }
+
+    function isValidStudySession(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+             data.preview is string && data.preview.size() <= 400 &&
+             isValidModelMode(data.modelMode) &&
+             isValidLanguageCode(data.languageCode) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidChatMessage(data, userId, sessionId) {
+      return data.userId is string && data.userId == userId &&
+             data.sessionId is string && data.sessionId == sessionId &&
+             data.role is string && data.role in ['user', 'assistant'] &&
+             data.content is string && data.content.size() <= 60000 &&
+             (!('secondaryContent' in data) || (data.secondaryContent is string && data.secondaryContent.size() <= 60000)) &&
+             data.modelLabel is string && data.modelLabel.size() <= 80 &&
+             (!('secondaryModelLabel' in data) || (data.secondaryModelLabel is string && data.secondaryModelLabel.size() <= 80)) &&
+             (!('attachmentLabel' in data) || (data.attachmentLabel is string && data.attachmentLabel.size() <= 200)) &&
+             data.sourceUrls is list && data.sourceUrls.size() <= 15 &&
+             (data.sourceUrls.size() == 0 || data.sourceUrls[0] is string) &&
+             isValidTimestamp(data.createdAt);
+    }
+
+    function isValidStudyNote(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+             data.content is string && data.content.size() >= 1 && data.content.size() <= 60000 &&
+             isValidLanguageCode(data.languageCode) &&
+             data.tags is list && data.tags.size() <= 10 &&
+             (data.tags.size() == 0 || data.tags[0] is string) &&
+             (!('sourceSessionId' in data) || (data.sourceSessionId is string && data.sourceSessionId.size() <= 128)) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidFlashcardDeck(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 160 &&
+             data.topic is string && data.topic.size() >= 1 && data.topic.size() <= 240 &&
+             isValidLanguageCode(data.languageCode) &&
+             data.cards is list && data.cards.size() <= 60 &&
+             (data.cards.size() == 0 || data.cards[0] is map) &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    function isValidSavedCourse(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 240 &&
+             data.provider is string && data.provider.size() >= 1 && data.provider.size() <= 160 &&
+             data.language is string && data.language.size() >= 1 && data.language.size() <= 80 &&
+             data.level is string && data.level.size() >= 1 && data.level.size() <= 60 &&
+             data.duration is string && data.duration.size() >= 1 && data.duration.size() <= 100 &&
+             data.cost is string && data.cost.size() >= 1 && data.cost.size() <= 60 &&
+             data.url is string && data.url.size() >= 1 && data.url.size() <= 1000 &&
+             data.summary is string && data.summary.size() <= 800 &&
+             isValidTimestamp(data.createdAt);
+    }
+
+    function isValidStudyStats(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.completedPomodoros is int && data.completedPomodoros >= 0 && data.completedPomodoros <= 1000000 &&
+             data.totalFocusMinutes is int && data.totalFocusMinutes >= 0 && data.totalFocusMinutes <= 100000000 &&
+             isValidTimestamp(data.createdAt) &&
+             isValidTimestamp(data.updatedAt);
+    }
+
+    match /users/{userId} {
+      allow read, write: if false;
+
+      match /sessions/{sessionId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(sessionId);
+        allow create: if isOwner(userId) && isValidId(sessionId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'preview', 'modelMode', 'languageCode', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'preview', 'modelMode', 'languageCode', 'createdAt', 'updatedAt']) &&
+                         isValidStudySession(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(sessionId) &&
+                         isValidStudySession(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'preview', 'modelMode', 'languageCode', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(sessionId);
+
+        match /messages/{messageId} {
+          allow list: if isOwner(userId) && isValidId(sessionId);
+          allow get: if isOwner(userId) && isValidId(sessionId) && isValidId(messageId);
+          allow create: if isOwner(userId) && isValidId(sessionId) && isValidId(messageId) &&
+                           incoming().keys().hasAll(['userId', 'sessionId', 'role', 'content', 'modelLabel', 'sourceUrls', 'createdAt']) &&
+                           incoming().keys().hasOnly(['userId', 'sessionId', 'role', 'content', 'secondaryContent', 'modelLabel', 'secondaryModelLabel', 'attachmentLabel', 'sourceUrls', 'createdAt']) &&
+                           isValidChatMessage(incoming(), userId, sessionId);
+          allow update: if isOwner(userId) && isValidId(sessionId) && isValidId(messageId) &&
+                           isValidChatMessage(incoming(), userId, sessionId) &&
+                           incoming().userId == existing().userId &&
+                           incoming().sessionId == existing().sessionId &&
+                           incoming().role == existing().role &&
+                           incoming().createdAt == existing().createdAt &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['content', 'secondaryContent', 'modelLabel', 'secondaryModelLabel', 'sourceUrls']);
+          allow delete: if isOwner(userId) && isValidId(sessionId) && isValidId(messageId);
+        }
+      }
+
+      match /notes/{noteId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(noteId);
+        allow create: if isOwner(userId) && isValidId(noteId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'content', 'languageCode', 'tags', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'content', 'languageCode', 'tags', 'sourceSessionId', 'createdAt', 'updatedAt']) &&
+                         isValidStudyNote(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(noteId) &&
+                         isValidStudyNote(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'languageCode', 'tags', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(noteId);
+      }
+
+      match /flashcardDecks/{deckId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(deckId);
+        allow create: if isOwner(userId) && isValidId(deckId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'topic', 'languageCode', 'cards', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'topic', 'languageCode', 'cards', 'createdAt', 'updatedAt']) &&
+                         isValidFlashcardDeck(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(deckId) &&
+                         isValidFlashcardDeck(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'topic', 'languageCode', 'cards', 'updatedAt']);
+        allow delete: if isOwner(userId) && isValidId(deckId);
+      }
+
+      match /savedCourses/{courseId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(courseId);
+        allow create: if isOwner(userId) && isValidId(courseId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'provider', 'language', 'level', 'duration', 'cost', 'url', 'summary', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'provider', 'language', 'level', 'duration', 'cost', 'url', 'summary', 'createdAt']) &&
+                         isValidSavedCourse(incoming(), userId);
+        allow update: if false;
+        allow delete: if isOwner(userId) && isValidId(courseId);
+      }
+
+      match /profile/{docId} {
+        allow list: if isOwner(userId);
+        allow get: if isOwner(userId) && isValidId(docId);
+        allow create: if isOwner(userId) && docId == 'stats' &&
+                         incoming().keys().hasAll(['userId', 'completedPomodoros', 'totalFocusMinutes', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'completedPomodoros', 'totalFocusMinutes', 'createdAt', 'updatedAt']) &&
+                         isValidStudyStats(incoming(), userId);
+        allow update: if isOwner(userId) && docId == 'stats' &&
+                         isValidStudyStats(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['completedPomodoros', 'totalFocusMinutes', 'updatedAt']);
+        allow delete: if false;
+      }
+    }
+  }
+}
